@@ -56,6 +56,12 @@ protocol DictionaryConvertible {
     var dictionaryRepresentation: [String: Any] { get }
 }
 
+protocol DictionaryDecodable {
+    init?(dictionary: [String: Any])
+}
+
+typealias DictionaryRepresentable = DictionaryConvertible & DictionaryDecodable
+
 extension DictionaryConvertible where Self: Encodable {
     var dictionaryRepresentation: [String: Any] {
         let data = try! JSONEncoder().encode(self)
@@ -63,23 +69,17 @@ extension DictionaryConvertible where Self: Encodable {
     }
 }
 
-protocol DictionaryDecodable {
-    init?(dictionary: [String: Any])
-}
-
-typealias DictionaryRepresentable = DictionaryConvertible & DictionaryDecodable
-
-struct AutocompleteResult: Codable {
-    let text: String
-    let suggestions: [String]
-}
-
-extension AutocompleteResult: DictionaryRepresentable {
+extension DictionaryDecodable where Self: Decodable {
     init?(dictionary: [String: Any]) {
         guard let data = try? JSONSerialization.data(withJSONObject: dictionary, options: []) else { return nil }
-        guard let info = try? JSONDecoder().decode(AutocompleteResult.self, from: data) else { return nil }
+        guard let info = try? JSONDecoder().decode(Self.self, from: data) else { return nil }
         self = info
     }
+}
+
+struct AutocompleteResult: Codable, DictionaryRepresentable {
+    let text: String
+    let suggestions: [String]
 }
 
 let result = AutocompleteResult(text: "text1", suggestions: ["result1", "result2"])
